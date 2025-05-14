@@ -1,0 +1,95 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>AI Run Tracker (Offline)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body { font-family: sans-serif; margin: 20px; background: #f0f0f0; }
+    h1 { color: #2e6c80; }
+    label { font-weight: bold; display: block; margin-top: 10px; }
+    input, textarea { width: 100%; padding: 6px; margin-top: 4px; border-radius: 4px; border: 1px solid #ccc; }
+    button { margin-top: 10px; padding: 10px 14px; background-color: #2e6c80; color: white; border: none; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #244f66; }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 14px; }
+    @media(max-width:600px) { th, td { font-size: 12px; } }
+  </style>
+</head>
+<body>
+  <h1>AI Run Tracker (Offline)</h1>
+
+  <form id="recordForm">
+    <label>Date</label><input type="date" id="date" required>
+    <label>Farm</label><input type="text" id="farm" required>
+    <label>Cow ID</label><input type="text" id="cowId" required>
+    <label>Breed</label><input type="text" id="breed">
+    <label>Semen Used</label><input type="text" id="semen">
+    <label>Method</label><input type="text" id="method">
+    <label>Notes</label><textarea id="notes" rows="2"></textarea>
+    <button type="button" onclick="saveRecord()">Save Entry</button>
+  </form>
+
+  <h2>Records</h2>
+  <table id="recordTable"><thead>
+    <tr><th>Date</th><th>Farm</th><th>Cow ID</th><th>Breed</th><th>Semen</th><th>Method</th><th>Notes</th><th>Delete</th></tr>
+  </thead><tbody></tbody></table>
+
+  <button onclick="exportCSV()">Export CSV</button>
+
+  <script>
+    const tableBody = document.querySelector("#recordTable tbody");
+    let records = JSON.parse(localStorage.getItem("ai_records") || "[]");
+
+    function saveRecord() {
+      const record = {
+        date: document.getElementById("date").value,
+        farm: document.getElementById("farm").value,
+        cowId: document.getElementById("cowId").value,
+        breed: document.getElementById("breed").value,
+        semen: document.getElementById("semen").value,
+        method: document.getElementById("method").value,
+        notes: document.getElementById("notes").value
+      };
+      if (!record.date || !record.farm || !record.cowId) {
+        alert("Date, Farm, and Cow ID are required.");
+        return;
+      }
+      records.push(record);
+      localStorage.setItem("ai_records", JSON.stringify(records));
+      document.getElementById("recordForm").reset();
+      renderTable();
+    }
+
+    function deleteRecord(index) {
+      records.splice(index, 1);
+      localStorage.setItem("ai_records", JSON.stringify(records));
+      renderTable();
+    }
+
+    function exportCSV() {
+      const csvRows = [["Date","Farm","Cow ID","Breed","Semen","Method","Notes"]];
+      records.forEach(r => {
+        csvRows.push([r.date, r.farm, r.cowId, r.breed, r.semen, r.method, r.notes]);
+      });
+      const blob = new Blob([csvRows.map(e => e.join(",")).join("\n")], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "ai_records.csv";
+      a.click();
+    }
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      records.forEach((r, i) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `<td>${r.date}</td><td>${r.farm}</td><td>${r.cowId}</td><td>${r.breed}</td><td>${r.semen}</td><td>${r.method}</td><td>${r.notes}</td><td><button onclick="deleteRecord(${i})">X</button></td>`;
+      });
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
